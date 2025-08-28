@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "510743549367",
+    "project_id": "stream-video-project-bd04d",
+    "storage_bucket": "stream-video-project-bd04d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510743549367:android:1c8ba99e22694304a40432",
+        "android_client_info": {
+          "package_name": "com.youssef_abdelmonem.qtech_task"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD27QetzDm6GSpuRJr444VBtSsMx4Ftu9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
