@@ -23,7 +23,7 @@ enum ErrorType {
   emptyData,
   unknown,
   none,
-  unAuth
+  unAuth,
 }
 
 enum VerifyType {
@@ -74,11 +74,7 @@ extension FileTypeX on FileType {
   }
 }
 
-enum ConnectionStatus {
-  connecting,
-  connected,
-  disconnected,
-}
+enum ConnectionStatus { connecting, connected, disconnected }
 
 enum MessageInputType {
   text,
@@ -121,3 +117,17 @@ extension MessageTypeX on MessageInputType {
     }
   }
 }
+
+enum FirebaseConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  error;
+
+  bool get isDisconnected => this == FirebaseConnectionStatus.disconnected;
+  bool get isConnecting => this == FirebaseConnectionStatus.connecting;
+  bool get isConnected => this == FirebaseConnectionStatus.connected;
+  bool get isError => this == FirebaseConnectionStatus.error;
+}
+
+enum ChannelCheckStatus { initial, checking, found, notFound, error }

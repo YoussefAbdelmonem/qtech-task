@@ -12,10 +12,9 @@ import '../repo/firebase_repo_data.dart';
 import 'live_stream_state.dart';
 
 class LiveStreamCubit extends Cubit<LiveStreamState> {
-  final FirebaseRepository _firebaseRepository;
+  final LiveStreamRepository _firebaseRepository;
   final AgoraService _agoraService;
 
-  // Expose agoraService for accessing the engine
   AgoraService get agoraService => _agoraService;
 
   late String _channelName;
@@ -40,8 +39,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   }) async {
     try {
       emit(state.copyWith(liveStramStatus: RequestState.loading));
-
-      // emit(LiveStreamLoading());
 
       _channelName = channelName;
       _userName = userName;
@@ -94,7 +91,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
             streamState: _streamState,
           ),
         );
-        // emit(LiveStreamConnected(_streamState));
       });
     }
 
@@ -109,8 +105,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         ),
       );
 
-      // emit(ReactionReceived(reaction));
-          // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
@@ -123,13 +117,11 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   Future<void> _initializeAgora() async {
     try {
       _streamState = _streamState.copyWith(status: "Checking permissions...");
-      // emit(LiveStreamConnected(_streamState));
       emit(state.copyWith(liveStramStatus: RequestState.done));
 
       // Check permissions
       final hasPermissions = await agoraService.requestPermissions();
       if (!hasPermissions) {
-        // emit(const LiveStreamError("Permissions not granted"));
         emit(
           state.copyWith(
             liveStramStatus: RequestState.error,
@@ -140,7 +132,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       }
 
       _streamState = _streamState.copyWith(status: "Creating engine...");
-      // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
@@ -152,7 +143,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       await agoraService.initializeEngine();
 
       _streamState = _streamState.copyWith(status: "Setting up channel...");
-      // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
@@ -185,7 +175,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         status: "Joining channel...",
         isInitialized: true,
       );
-      // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
@@ -196,7 +185,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       // Join channel
       await agoraService.joinChannel(_channelName, _isHost);
     } catch (e) {
-      // emit(LiveStreamError("Agora initialization failed: $e"));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.error,
@@ -208,7 +196,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
 
   void _onJoinChannelSuccess(RtcConnection connection, int elapsed) {
     _streamState = _streamState.copyWith(isJoined: true, status: "Connected");
-    // emit(LiveStreamConnected(_streamState));
     emit(
       state.copyWith(
         liveStramStatus: RequestState.done,
@@ -221,7 +208,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   void _onUserJoined(RtcConnection connection, int remoteUid, int elapsed) {
     if (!_isHost) {
       _streamState = _streamState.copyWith(remoteUid: remoteUid);
-      // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
@@ -238,21 +224,17 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   ) {
     if (!_isHost && _streamState.remoteUid == remoteUid) {
       _streamState = _streamState.copyWith(remoteUid: 0);
-      // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
           streamState: _streamState,
         ),
       );
-      // emit(LiveStreamConnected(_streamState));
-      // Remote user left
     }
   }
 
   void _onError(ErrorCodeType errorCode, String message) {
     _streamState = _streamState.copyWith(status: "Error: $message");
-    // emit(LiveStreamConnected(_streamState));
     emit(
       state.copyWith(
         liveStramStatus: RequestState.error,
@@ -266,7 +248,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       isJoined: false,
       status: "Disconnected",
     );
-    // emit(LiveStreamConnected(_streamState));
     emit(
       state.copyWith(
         liveStramStatus: RequestState.done,
@@ -282,7 +263,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
     final newMutedState = !_streamState.isMuted;
     await agoraService.muteLocalAudio(newMutedState);
     _streamState = _streamState.copyWith(isMuted: newMutedState);
-    // emit(LiveStreamConnected(_streamState));
     emit(
       state.copyWith(
         liveStramStatus: RequestState.done,
@@ -297,7 +277,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
     final newCameraState = !_streamState.isCameraOff;
     await agoraService.muteLocalVideo(newCameraState);
     _streamState = _streamState.copyWith(isCameraOff: newCameraState);
-    // emit(LiveStreamConnected(_streamState));
     emit(
       state.copyWith(
         liveStramStatus: RequestState.done,
@@ -321,7 +300,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       );
       await _firebaseRepository.sendReaction(reaction);
     } catch (e) {
-      // emit(LiveStreamError('Error sending reaction: $e'));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.error,
@@ -332,11 +310,7 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   }
 
   Future<void> _updateViewerCount(bool increment) async {
-    try {
-      await _firebaseRepository.updateViewerCount(increment);
-    } catch (e) {
-      // Handle silently or log
-    }
+    await _firebaseRepository.updateViewerCount(increment);
   }
 
   void _startReactionCleanup() {
@@ -381,7 +355,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         isPaused: true,
         status: "Stream paused",
       );
-      // emit(LiveStreamConnected(_streamState));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.done,
@@ -392,7 +365,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       // Optionally send a message to viewers
       await _notifyViewersOfPause(true);
     } catch (e) {
-      // emit(LiveStreamError("Failed to pause stream: $e"));
       emit(
         state.copyWith(
           liveStramStatus: RequestState.error,
@@ -416,7 +388,6 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         isPaused: false,
         status: "Connected",
       );
-      // emit(LiveStreamConnected(_streamState));
 
       emit(
         state.copyWith(

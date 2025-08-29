@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qtech_task/core/widgets/custom_loading.dart';
 import '../../../core/utils/constant.dart';
 import '../../../core/widgets/error_widget.dart';
-import '../../pre_join_live/prejoin_live_screen.dart';
+import '../../join_live_stream/prejoin_live_screen.dart';
 import '../cubit/live_stream_cubit.dart';
 import '../cubit/live_stream_state.dart';
 import 'guest_list_widget.dart';
@@ -138,13 +138,20 @@ class _LiveStreamViewState extends State<LiveStreamView>
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-                context.read<LiveStreamCubit>().leaveStream();
+            BlocConsumer<LiveStreamCubit, LiveStreamState>(
+              listener: (context, state) {
+                // TODO: implement listener
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('End Stream'),
+              builder: (context, state) {
+                return TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                    context.read<LiveStreamCubit>().leaveStream();
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('End Stream'),
+                );
+              },
             ),
           ],
         );

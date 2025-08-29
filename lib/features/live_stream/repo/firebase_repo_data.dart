@@ -1,11 +1,14 @@
 import 'package:firebase_database/firebase_database.dart';
 
 import '../model/reactions_model.dart';
+/////TODO : handle it properly // -----------enhance Error in whole app --------
 
-class FirebaseRepository {
-  static final FirebaseRepository _instance = FirebaseRepository._internal();
-  factory FirebaseRepository() => _instance;
-  FirebaseRepository._internal();
+class LiveStreamRepository {
+  static final LiveStreamRepository _instance =
+      LiveStreamRepository._internal();
+  factory LiveStreamRepository() => _instance;
+  LiveStreamRepository._internal();
+
   late DatabaseReference _channelRef;
   late DatabaseReference _viewerCountRef;
   late DatabaseReference _guestsRef;
@@ -81,7 +84,7 @@ class FirebaseRepository {
           .orderByChild('timestamp')
           .endAt(cutoffTime.millisecondsSinceEpoch)
           .once();
-          
+
       if (snapshot.snapshot.exists) {
         final data = snapshot.snapshot.value as Map<dynamic, dynamic>;
         for (final key in data.keys) {
@@ -92,35 +95,36 @@ class FirebaseRepository {
       throw Exception('Error cleaning up reactions: $e');
     }
   }
-  // Add this method to your FirebaseRepository class
 
-Future<void> sendStreamStatus(String channelName, String status) async {
-  try {
-    final statusRef = FirebaseDatabase.instance
+  Future<void> sendStreamStatus(String channelName, String status) async {
+    try {
+      final statusRef = FirebaseDatabase.instance
+          .ref()
+          .child('streams')
+          .child(channelName)
+          .child('status');
+
+      await statusRef.set({
+        'status': status,
+        'timestamp': ServerValue.timestamp,
+      });
+    } catch (e) {
+      throw Exception('Error updating stream status: $e');
+    }
+  }
+
+  Stream<String> getStreamStatusStream(String channelName) {
+    return FirebaseDatabase.instance
         .ref()
         .child('streams')
         .child(channelName)
-        .child('status');
-    
-    await statusRef.set({
-      'status': status,
-      'timestamp': ServerValue.timestamp,
-    });
-  } catch (e) {
-    throw Exception('Error updating stream status: $e');
+        .child('status')
+        .child('status')
+        .onValue
+        .map((event) {
+          return event.snapshot.exists
+              ? event.snapshot.value as String
+              : 'live';
+        });
   }
-}
-
-Stream<String> getStreamStatusStream(String channelName) {
-  return FirebaseDatabase.instance
-      .ref()
-      .child('streams')
-      .child(channelName)
-      .child('status')
-      .child('status')
-      .onValue
-      .map((event) {
-    return event.snapshot.exists ? event.snapshot.value as String : 'live';
-  });
-}
 }

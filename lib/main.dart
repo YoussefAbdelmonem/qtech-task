@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:qtech_task/firebase_options.dart';
 
 import 'core/services/bloc_observer.dart';
-import 'features/pre_join_live/prejoin_live_screen.dart';
+import 'features/join_live_stream/prejoin_live_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

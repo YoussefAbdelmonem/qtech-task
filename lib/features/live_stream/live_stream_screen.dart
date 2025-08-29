@@ -31,7 +31,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen>
       providers: [
         BlocProvider(
           create: (context) =>
-              LiveStreamCubit(FirebaseRepository(), AgoraService())
+              LiveStreamCubit(LiveStreamRepository(), AgoraService())
                 ..initializeStream(
                   channelName: widget.channelName,
                   userName: widget.userName,
@@ -48,5 +48,3 @@ class _LiveStreamScreenState extends State<LiveStreamScreen>
     );
   }
 }
-
-

@@ -20,8 +20,7 @@ class StreamStateModel extends Equatable {
     this.guests = const {},
     this.isMuted = false,
     this.isCameraOff = false,
-    this.isPaused =false,
-    
+    this.isPaused = false,
   });
 
   StreamStateModel copyWith({
@@ -44,7 +43,7 @@ class StreamStateModel extends Equatable {
       guests: guests ?? this.guests,
       isMuted: isMuted ?? this.isMuted,
       isCameraOff: isCameraOff ?? this.isCameraOff,
-      isPaused :isPaused ??this.isPaused,
+      isPaused: isPaused ?? this.isPaused,
     );
   }
 
@@ -59,6 +58,5 @@ class StreamStateModel extends Equatable {
     isMuted,
     isCameraOff,
     isPaused,
- 
-     ];
+  ];
 }
