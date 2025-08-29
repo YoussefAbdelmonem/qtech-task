@@ -1,7 +1,9 @@
+import 'package:bloc/bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:qtech_task/firebase_options.dart';
 
+import 'core/services/bloc_observer.dart';
 import 'features/pre_join_live/prejoin_live_screen.dart';
 
 void main() async {
@@ -15,6 +17,8 @@ void main() async {
   } catch (e) {
     debugPrint('❌ Firebase initialization failed: $e');
   }
+    Bloc.observer = AppBlocObserver();
+
   runApp(const MyApp());
 }
 

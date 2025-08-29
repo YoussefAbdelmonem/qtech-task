@@ -4,6 +4,12 @@ import 'package:permission_handler/permission_handler.dart';
 import '../utils/constant.dart';
 
 class AgoraService {
+
+  static final AgoraService _instance = AgoraService._internal();
+  factory AgoraService() => _instance;
+  AgoraService._internal();
+
+
   RtcEngine? _engine;
   RtcEngine? get engine => _engine;
   

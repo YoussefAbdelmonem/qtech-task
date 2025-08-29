@@ -9,6 +9,7 @@ class StreamStateModel extends Equatable {
   final Map<String, dynamic> guests;
   final bool isMuted;
   final bool isCameraOff;
+  final bool isPaused;
 
   const StreamStateModel({
     this.isJoined = false,
@@ -19,6 +20,8 @@ class StreamStateModel extends Equatable {
     this.guests = const {},
     this.isMuted = false,
     this.isCameraOff = false,
+    this.isPaused =false,
+    
   });
 
   StreamStateModel copyWith({
@@ -30,6 +33,7 @@ class StreamStateModel extends Equatable {
     Map<String, dynamic>? guests,
     bool? isMuted,
     bool? isCameraOff,
+    bool? isPaused,
   }) {
     return StreamStateModel(
       isJoined: isJoined ?? this.isJoined,
@@ -40,18 +44,21 @@ class StreamStateModel extends Equatable {
       guests: guests ?? this.guests,
       isMuted: isMuted ?? this.isMuted,
       isCameraOff: isCameraOff ?? this.isCameraOff,
+      isPaused :isPaused ??this.isPaused,
     );
   }
 
   @override
   List<Object?> get props => [
-        isJoined,
-        isInitialized,
-        status,
-        remoteUid,
-        viewerCount,
-        guests,
-        isMuted,
-        isCameraOff,
-      ];
+    isJoined,
+    isInitialized,
+    status,
+    remoteUid,
+    viewerCount,
+    guests,
+    isMuted,
+    isCameraOff,
+    isPaused,
+ 
+     ];
 }

@@ -1,43 +1,88 @@
 import 'package:equatable/equatable.dart';
+import 'package:qtech_task/core/extensions/enums.dart';
 
 import '../live_stream_screen.dart';
 import '../model/reactions_model.dart';
 import '../model/stream_state_model.dart';
 
-abstract class LiveStreamState extends Equatable {
-  const LiveStreamState();
+class LiveStreamState extends Equatable {
+  final RequestState liveStramStatus, reactionStatus, leaveStreamStatus;
+  final StreamStateModel? streamState;
+  final String errorMessage;
+  final Reaction? latestReaction;
+
+  const LiveStreamState({
+    this.liveStramStatus = RequestState.initial,
+    this.streamState,
+    this.errorMessage = '',
+    this.latestReaction,
+    this.reactionStatus = RequestState.initial,
+    this.leaveStreamStatus = RequestState.initial,
+  });
+
+  LiveStreamState copyWith({
+    RequestState? liveStramStatus,
+    StreamStateModel? streamState,
+    String? errorMessage,
+    Reaction? latestReaction,
+    RequestState? reactionStatus,
+    RequestState? leaveStreamStatus,
+  }) {
+    return LiveStreamState(
+      liveStramStatus: liveStramStatus ?? this.liveStramStatus,
+      streamState: streamState ?? this.streamState,
+      errorMessage: errorMessage ?? this.errorMessage,
+      latestReaction: latestReaction ?? this.latestReaction,
+      reactionStatus: reactionStatus ?? this.reactionStatus,
+      leaveStreamStatus: leaveStreamStatus ?? this.leaveStreamStatus,
+    );
+  }
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [
+    liveStramStatus,
+    streamState,
+    errorMessage,
+    latestReaction,
+    reactionStatus,
+    leaveStreamStatus,
+  ];
 }
 
-class LiveStreamInitial extends LiveStreamState {}
+// abstract class LiveStreamState extends Equatable {
+//   const LiveStreamState();
 
-class LiveStreamLoading extends LiveStreamState {}
+//   @override
+//   List<Object?> get props => [];
+// }
 
-class LiveStreamConnected extends LiveStreamState {
-  final StreamStateModel streamState;
+// class LiveStreamInitial extends LiveStreamState {}
 
-  const LiveStreamConnected(this.streamState);
+// class LiveStreamLoading extends LiveStreamState {}
 
-  @override
-  List<Object?> get props => [streamState];
-}
+// class LiveStreamConnected extends LiveStreamState {
+//   final StreamStateModel streamState;
 
-class LiveStreamError extends LiveStreamState {
-  final String message;
+//   const LiveStreamConnected(this.streamState);
 
-  const LiveStreamError(this.message);
+//   @override
+//   List<Object?> get props => [streamState];
+// }
 
-  @override
-  List<Object?> get props => [message];
-}
+// class LiveStreamError extends LiveStreamState {
+//   final String message;
 
-class ReactionReceived extends LiveStreamState {
-  final Reaction reaction;
+//   const LiveStreamError(this.message);
 
-  const ReactionReceived(this.reaction);
+//   @override
+//   List<Object?> get props => [message];
+// }
 
-  @override
-  List<Object?> get props => [reaction];
-}
+// class ReactionReceived extends LiveStreamState {
+//   final Reaction reaction;
+
+//   const ReactionReceived(this.reaction);
+
+//   @override
+//   List<Object?> get props => [reaction];
+// }

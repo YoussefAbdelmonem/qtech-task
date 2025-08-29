@@ -1,9 +1,11 @@
 import 'dart:async';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import '../../../core/services/agora_service.dart';
 
-import '../live_stream_screen.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../core/extensions/enums.dart';
+import '../../../core/services/agora_service.dart';
 import '../model/reactions_model.dart';
 import '../model/stream_state_model.dart';
 import '../repo/firebase_repo_data.dart';
@@ -29,7 +31,7 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   StreamSubscription? _reactionsSubscription;
 
   LiveStreamCubit(this._firebaseRepository, this._agoraService)
-    : super(LiveStreamInitial());
+    : super(LiveStreamState());
 
   Future<void> initializeStream({
     required String channelName,
@@ -37,7 +39,9 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
     required bool isHost,
   }) async {
     try {
-      emit(LiveStreamLoading());
+      emit(state.copyWith(liveStramStatus: RequestState.loading));
+
+      // emit(LiveStreamLoading());
 
       _channelName = channelName;
       _userName = userName;
@@ -53,7 +57,12 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       // Start reaction cleanup timer
       _startReactionCleanup();
     } catch (e) {
-      emit(LiveStreamError("Initialization failed: $e"));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.error,
+          errorMessage: "Initialization failed: $e",
+        ),
+      );
     }
   }
 
@@ -63,7 +72,14 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         .getViewerCountStream()
         .listen((viewerCount) {
           _streamState = _streamState.copyWith(viewerCount: viewerCount);
-          emit(LiveStreamConnected(_streamState));
+
+          emit(
+            state.copyWith(
+              liveStramStatus: RequestState.done,
+              streamState: _streamState,
+            ),
+          );
+          // emit(LiveStreamConnected(_streamState));
         });
 
     // Listen to guests changes (only for host)
@@ -72,7 +88,13 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         guests,
       ) {
         _streamState = _streamState.copyWith(guests: guests);
-        emit(LiveStreamConnected(_streamState));
+        emit(
+          state.copyWith(
+            liveStramStatus: RequestState.done,
+            streamState: _streamState,
+          ),
+        );
+        // emit(LiveStreamConnected(_streamState));
       });
     }
 
@@ -80,33 +102,63 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
     _reactionsSubscription = _firebaseRepository.getReactionsStream().listen((
       reaction,
     ) {
-      if (reaction is Reaction) {
-        emit(ReactionReceived(reaction));
-      }
-      emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          reactionStatus: RequestState.done,
+          latestReaction: reaction,
+        ),
+      );
+
+      // emit(ReactionReceived(reaction));
+          // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
     });
   }
 
   Future<void> _initializeAgora() async {
     try {
       _streamState = _streamState.copyWith(status: "Checking permissions...");
-      emit(LiveStreamConnected(_streamState));
+      // emit(LiveStreamConnected(_streamState));
+      emit(state.copyWith(liveStramStatus: RequestState.done));
 
       // Check permissions
       final hasPermissions = await agoraService.requestPermissions();
       if (!hasPermissions) {
-        emit(const LiveStreamError("Permissions not granted"));
+        // emit(const LiveStreamError("Permissions not granted"));
+        emit(
+          state.copyWith(
+            liveStramStatus: RequestState.error,
+            errorMessage: "Permissions not granted",
+          ),
+        );
         return;
       }
 
       _streamState = _streamState.copyWith(status: "Creating engine...");
-      emit(LiveStreamConnected(_streamState));
+      // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
 
       // Initialize engine
       await agoraService.initializeEngine();
 
       _streamState = _streamState.copyWith(status: "Setting up channel...");
-      emit(LiveStreamConnected(_streamState));
+      // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
 
       // Setup channel
       await agoraService.setupChannel(_isHost);
@@ -133,25 +185,49 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         status: "Joining channel...",
         isInitialized: true,
       );
-      emit(LiveStreamConnected(_streamState));
+      // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
 
       // Join channel
       await agoraService.joinChannel(_channelName, _isHost);
     } catch (e) {
-      emit(LiveStreamError("Agora initialization failed: $e"));
+      // emit(LiveStreamError("Agora initialization failed: $e"));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.error,
+          errorMessage: "Agora initialization failed: $e",
+        ),
+      );
     }
   }
 
   void _onJoinChannelSuccess(RtcConnection connection, int elapsed) {
     _streamState = _streamState.copyWith(isJoined: true, status: "Connected");
-    emit(LiveStreamConnected(_streamState));
+    // emit(LiveStreamConnected(_streamState));
+    emit(
+      state.copyWith(
+        liveStramStatus: RequestState.done,
+        streamState: _streamState,
+      ),
+    );
     _updateViewerCount(true);
   }
 
   void _onUserJoined(RtcConnection connection, int remoteUid, int elapsed) {
     if (!_isHost) {
       _streamState = _streamState.copyWith(remoteUid: remoteUid);
-      emit(LiveStreamConnected(_streamState));
+      // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
     }
   }
 
@@ -162,13 +238,27 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
   ) {
     if (!_isHost && _streamState.remoteUid == remoteUid) {
       _streamState = _streamState.copyWith(remoteUid: 0);
-      emit(LiveStreamConnected(_streamState));
+      // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
+      // emit(LiveStreamConnected(_streamState));
+      // Remote user left
     }
   }
 
   void _onError(ErrorCodeType errorCode, String message) {
     _streamState = _streamState.copyWith(status: "Error: $message");
-    emit(LiveStreamConnected(_streamState));
+    // emit(LiveStreamConnected(_streamState));
+    emit(
+      state.copyWith(
+        liveStramStatus: RequestState.error,
+        errorMessage: "Agora Error: $message",
+      ),
+    );
   }
 
   void _onLeaveChannel(RtcConnection connection, RtcStats stats) {
@@ -176,7 +266,13 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       isJoined: false,
       status: "Disconnected",
     );
-    emit(LiveStreamConnected(_streamState));
+    // emit(LiveStreamConnected(_streamState));
+    emit(
+      state.copyWith(
+        liveStramStatus: RequestState.done,
+        streamState: _streamState,
+      ),
+    );
     _updateViewerCount(false);
   }
 
@@ -186,7 +282,13 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
     final newMutedState = !_streamState.isMuted;
     await agoraService.muteLocalAudio(newMutedState);
     _streamState = _streamState.copyWith(isMuted: newMutedState);
-    emit(LiveStreamConnected(_streamState));
+    // emit(LiveStreamConnected(_streamState));
+    emit(
+      state.copyWith(
+        liveStramStatus: RequestState.done,
+        streamState: _streamState,
+      ),
+    );
   }
 
   Future<void> toggleCamera() async {
@@ -195,7 +297,13 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
     final newCameraState = !_streamState.isCameraOff;
     await agoraService.muteLocalVideo(newCameraState);
     _streamState = _streamState.copyWith(isCameraOff: newCameraState);
-    emit(LiveStreamConnected(_streamState));
+    // emit(LiveStreamConnected(_streamState));
+    emit(
+      state.copyWith(
+        liveStramStatus: RequestState.done,
+        streamState: _streamState,
+      ),
+    );
   }
 
   Future<void> switchCamera() async {
@@ -213,7 +321,13 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
       );
       await _firebaseRepository.sendReaction(reaction);
     } catch (e) {
-      emit(LiveStreamError('Error sending reaction: $e'));
+      // emit(LiveStreamError('Error sending reaction: $e'));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.error,
+          errorMessage: 'Error sending reaction: $e',
+        ),
+      );
     }
   }
 
@@ -242,20 +356,108 @@ class LiveStreamCubit extends Cubit<LiveStreamState> {
         }
       }
 
+      emit(state.copyWith(liveStramStatus: RequestState.done));
       await agoraService.leaveChannel();
       await agoraService.release();
     } catch (e) {
-      // Handle silently
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.error,
+          errorMessage: 'Error leaving stream: $e',
+        ),
+      );
+    }
+  }
+
+  Future<void> pauseStreaming() async {
+    if (!_isHost || !_streamState.isJoined) return;
+
+    try {
+      // Pause video transmission
+      await _agoraService.muteLocalVideo(true);
+
+      // Update state to paused
+      _streamState = _streamState.copyWith(
+        isPaused: true,
+        status: "Stream paused",
+      );
+      // emit(LiveStreamConnected(_streamState));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
+
+      // Optionally send a message to viewers
+      await _notifyViewersOfPause(true);
+    } catch (e) {
+      // emit(LiveStreamError("Failed to pause stream: $e"));
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.error,
+          errorMessage: "Failed to pause stream: $e",
+        ),
+      );
+    }
+  }
+
+  Future<void> resumeStreaming() async {
+    if (!_isHost || !_streamState.isJoined) return;
+
+    try {
+      // Resume video transmission if camera was not manually turned off
+      if (!_streamState.isCameraOff) {
+        await _agoraService.muteLocalVideo(false);
+      }
+
+      // Update state to resumed
+      _streamState = _streamState.copyWith(
+        isPaused: false,
+        status: "Connected",
+      );
+      // emit(LiveStreamConnected(_streamState));
+
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.done,
+          streamState: _streamState,
+        ),
+      );
+      // Notify viewers that stream resumed
+      await _notifyViewersOfPause(false);
+    } catch (e) {
+      emit(
+        state.copyWith(
+          liveStramStatus: RequestState.error,
+          errorMessage: "Failed to resume stream: $e",
+        ),
+      );
+    }
+  }
+
+  Future<void> _notifyViewersOfPause(bool isPaused) async {
+    try {
+      // Send a special message to Firebase to notify viewers
+      await _firebaseRepository.sendStreamStatus(
+        _channelName,
+        isPaused ? 'paused' : 'live',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print("Failed to notify viewers: $e");
+      }
     }
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
+    await leaveStream();
+
     _viewerCountSubscription?.cancel();
     _guestsSubscription?.cancel();
     _reactionsSubscription?.cancel();
     _reactionCleanupTimer?.cancel();
-    leaveStream();
     return super.close();
   }
 }
