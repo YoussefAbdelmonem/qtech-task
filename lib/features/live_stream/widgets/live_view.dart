@@ -35,13 +35,11 @@ class _LiveStreamViewState extends State<LiveStreamView>
   @override
   void initState() {
     super.initState();
-    // Add observer to listen to app lifecycle changes
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    // Remove observer when widget is disposed
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -75,7 +73,6 @@ class _LiveStreamViewState extends State<LiveStreamView>
     if (_isInBackground) {
       _isInBackground = false;
       if (widget.isHost) {
-        // Resume video streaming for host
         cubit.resumeStreaming();
       }
     }
@@ -95,19 +92,16 @@ class _LiveStreamViewState extends State<LiveStreamView>
   }
 
   void _handleAppDetached(LiveStreamCubit cubit) {
-    // App is about to be terminated
     _handleStreamCleanup(cubit);
   }
 
   void _handleAppHidden(LiveStreamCubit cubit) {
-    //  (iOS specific)
     if (widget.isHost) {
       cubit.pauseStreaming();
     }
   }
 
   void _handleStreamCleanup(LiveStreamCubit cubit) {
-    // Clean exit from stream
     cubit.leaveStream();
   }
 
@@ -115,19 +109,18 @@ class _LiveStreamViewState extends State<LiveStreamView>
     final cubit = context.read<LiveStreamCubit>();
 
     if (widget.isHost) {
-      return await _showExitConfirmationDialog() ?? false;
+      return await _showExitConfirmationDialog(cubit) ?? false;
     } else {
-      // Guests can leave immediately
       cubit.leaveStream();
       return true;
     }
   }
 
-  Future<bool?> _showExitConfirmationDialog() async {
+  Future<bool?> _showExitConfirmationDialog(LiveStreamCubit cubit) async {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('End Live Stream?'),
           content: const Text(
@@ -135,27 +128,42 @@ class _LiveStreamViewState extends State<LiveStreamView>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
               child: const Text('Cancel'),
             ),
-            BlocConsumer<LiveStreamCubit, LiveStreamState>(
-              listener: (context, state) {
-                // TODO: implement listener
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+                cubit.leaveStream();
               },
-              builder: (context, state) {
-                return TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(true);
-                    context.read<LiveStreamCubit>().leaveStream();
-                  },
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('End Stream'),
-                );
-              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('End Stream'),
             ),
           ],
         );
       },
+    );
+  }
+
+  // Helper method to handle navigation
+  Future<void> _handleExit() async {
+    final cubit = context.read<LiveStreamCubit>();
+
+    if (widget.isHost) {
+      final shouldExit = await _showExitConfirmationDialog(cubit);
+      if (shouldExit == true) {
+        _navigateToPreJoin();
+      }
+    } else {
+      cubit.leaveStream();
+      _navigateToPreJoin();
+    }
+  }
+
+  void _navigateToPreJoin() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const PreJoinScreen()),
+      (route) => false,
     );
   }
 
@@ -173,28 +181,20 @@ class _LiveStreamViewState extends State<LiveStreamView>
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           elevation: 0,
-          leading: IconButton(
-            onPressed: () async {
-              if (await _onWillPop()) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => PreJoinScreen()),
-                  (route) => false,
-                );
-              }
-            },
-            icon: const Icon(Icons.arrow_back),
+          leading: BlocListener<LiveStreamCubit, LiveStreamState>(
+            listener: (context, state) {},
+            child: IconButton(
+              onPressed: _handleExit,
+              icon: const Icon(Icons.arrow_back),
+            ),
           ),
           actions: [
-            IconButton(
-              onPressed: () async {
-                if (await _onWillPop()) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => PreJoinScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              icon: const Icon(Icons.logout_sharp, color: Colors.red),
+            BlocListener<LiveStreamCubit, LiveStreamState>(
+              listener: (context, state) {},
+              child: IconButton(
+                onPressed: _handleExit,
+                icon: const Icon(Icons.logout_sharp, color: Colors.red),
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -222,7 +222,7 @@ class _LiveStreamViewState extends State<LiveStreamView>
             }
 
             if (state.liveStramStatus.isLoading) {
-              return LoadingApp();
+              return const LoadingApp();
             }
 
             if (state.liveStramStatus.isError) {
@@ -252,157 +252,15 @@ class _LiveStreamViewState extends State<LiveStreamView>
                   // Reaction animations overlay
                   const ReactionAnimationsWidget(),
 
-                  // Top overlay with stream info
                   if (state.streamState!.isJoined)
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.7),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                        child: SafeArea(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: state.streamState!.isPaused
-                                                ? Colors.orange
-                                                : Colors.red,
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            state.streamState!.isPaused
-                                                ? "PAUSED"
-                                                : "LIVE",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Flexible(
-                                          child: Text(
-                                            widget.userName,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        if (widget.isHost)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 8,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.orange,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: const Text(
-                                              "HOST",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Channel: ${widget.channelName}",
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.8),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.6),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.visibility,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      state.streamState!.viewerCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    _buildTopOverlay(state.streamState!),
 
-                  // Guest list (only visible to host)
                   if (widget.isHost && state.streamState!.guests.isNotEmpty)
                     GuestListWidget(guests: state.streamState!.guests),
 
-                  // Reaction panel
                   if (!widget.isHost)
                     buildReactionPanel(context, state.streamState),
 
-                  // Host controls (only for host)
                   if (widget.isHost)
                     buildHostControls(context, state.streamState),
                 ],
@@ -411,6 +269,131 @@ class _LiveStreamViewState extends State<LiveStreamView>
 
             return const Center(child: CircularProgressIndicator());
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopOverlay(streamState) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+          ),
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: streamState.isPaused
+                                ? Colors.orange
+                                : Colors.red,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            streamState.isPaused ? "PAUSED" : "LIVE",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            widget.userName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (widget.isHost)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              "HOST",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Channel: ${widget.channelName}",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.visibility, color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      streamState.viewerCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -526,46 +509,3 @@ class _LiveStreamViewState extends State<LiveStreamView>
     );
   }
 }
-
-  // Widget _buildPausedView() {
-  //   return Container(
-  //     color: Colors.black,
-  //     child: Center(
-  //       child: Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           const Icon(
-  //             Icons.pause_circle_filled,
-  //             color: Colors.orange,
-  //             size: 80,
-  //           ),
-  //           const SizedBox(height: 20),
-  //           const Text(
-  //             'Stream Paused',
-  //             style: TextStyle(
-  //               color: Colors.white,
-  //               fontSize: 24,
-  //               fontWeight: FontWeight.bold,
-  //             ),
-  //           ),
-  //           const SizedBox(height: 10),
-  //           const Text(
-  //             'Your stream is paused while the app is in background',
-  //             style: TextStyle(color: Colors.white70, fontSize: 16),
-  //             textAlign: TextAlign.center,
-  //           ),
-  //           const SizedBox(height: 20),
-  //           ElevatedButton(
-  //             onPressed: () {
-  //               setState(() {
-  //                 _isInBackground = false;
-  //               });
-  //               context.read<LiveStreamCubit>().resumeStreaming();
-  //             },
-  //             child: const Text('Resume Stream'),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
