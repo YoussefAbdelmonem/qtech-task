@@ -50,19 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD27QetzDm6GSpuRJr444VBtSsMx4Ftu9k',
-    appId: '1:510743549367:android:1c8ba99e22694304a40432',
-    messagingSenderId: '510743549367',
-    projectId: 'stream-video-project-bd04d',
-    storageBucket: 'stream-video-project-bd04d.firebasestorage.app',
+    apiKey: 'AIzaSyD1UCrCtIvoY6u4zE9WEIsQhRfYnAygywU',
+    appId: '1:580426483615:android:953ad516aa0176be969faa',
+    messagingSenderId: '580426483615',
+    projectId: 'labor-f4ef8',
+    storageBucket: 'labor-f4ef8.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBosS-XMNQboi4GepXzoJmypySg_3te3xc',
-    appId: '1:510743549367:ios:7bc404979533e6e1a40432',
-    messagingSenderId: '510743549367',
-    projectId: 'stream-video-project-bd04d',
-    storageBucket: 'stream-video-project-bd04d.firebasestorage.app',
+    apiKey: 'AIzaSyBcZDITd-L0NTo65Ro0DTQWfYbkg_Jesf0',
+    appId: '1:580426483615:ios:a6fb2f7c7c81b8c7969faa',
+    messagingSenderId: '580426483615',
+    projectId: 'labor-f4ef8',
+    storageBucket: 'labor-f4ef8.firebasestorage.app',
     iosBundleId: 'com.youssefabdelmonem.qtechTask',
   );
+
 }
